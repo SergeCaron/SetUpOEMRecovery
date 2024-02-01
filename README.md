@@ -64,6 +64,11 @@ Here is a sample output:
 	E           RECOVERY     FAT32          Removable Healthy      OK                      24.7 GB 31.99 GB
 
 
+```
+
+![USBKey]("Ressources\Recovery USB Key.jpg")
+
+```
 	Enter 'Yes' to reinitialize this Recovery Drive (E:), anything else to continue:
 	Updating drive E: with OEM drivers from this system.
 
