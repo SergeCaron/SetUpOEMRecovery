@@ -57,15 +57,15 @@ Here is a sample output:
 
 	Press RETURN to invoke the RecoveryDrive creator:
 ```
-![Step_1](Ressources/Create_Recovery_Drive_Step_1
+![Step_1](Ressources/Create_Recovery_Drive_Step_1.jpg)
 
-![Step_2](Ressources/Create_Recovery_Drive_Step_2
+![Step_2](Ressources/Create_Recovery_Drive_Step_2.jpg)
 
-![Step_3](Ressources/Create_Recovery_Drive_Step_3
+![Step_3](Ressources/Create_Recovery_Drive_Step_3.jpg)
 
-![Step_4](Ressources/Create_Recovery_Drive_Step_4
+![Step_4](Ressources/Create_Recovery_Drive_Step_4.jpg)
 
-![Step_5](Ressources/Create_Recovery_Drive_Step_5
+![Step_5](Ressources/Create_Recovery_Drive_Step_5.jpg)
 
 ![USBKey](Ressources/Recovery_USB_Key.jpg)
 
