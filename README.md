@@ -66,7 +66,7 @@ Here is a sample output:
 
 ```
 
-![USBKey](Ressources\Recovery_USB_Key.jpg)
+![USBKey](Ressources/Recovery_USB_Key.jpg)
 
 ```
 	Enter 'Yes' to reinitialize this Recovery Drive (E:), anything else to continue:
