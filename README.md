@@ -58,9 +58,13 @@ Here is a sample output:
 	Press RETURN to invoke the RecoveryDrive creator:
 ```
 ![Step_1](Ressources/Create_Recovery_Drive_Step_1
+
 ![Step_2](Ressources/Create_Recovery_Drive_Step_2
+
 ![Step_3](Ressources/Create_Recovery_Drive_Step_3
+
 ![Step_4](Ressources/Create_Recovery_Drive_Step_4
+
 ![Step_5](Ressources/Create_Recovery_Drive_Step_5
 
 ![USBKey](Ressources/Recovery_USB_Key.jpg)
