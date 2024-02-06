@@ -1,3 +1,25 @@
+# About the Windows Recovery Media (and Bare Metal Restore)
+
+Any modern Windows installation can create a "Recovery Drive" containing utilities to troubleshoot and possibly restore the system. Subject to Microsoft's restrictions, the target of the Bare Metal Restore can be different hardware, making the "Recovery Drive" a valuable tool.
+
+There are caveats:
+1. The Recovery Drive utility creator does not include all OEM drivers, in particular critical RAID and network drivers required to access the system itself or the system backup.
+
+2. It may not be possible to slipstream these drivers into the Recovery Media Windows image : the DISM utility will not update WIM files larger than 4GB (split across multiple .SWM files).
+
+3. There are issues accessing iSCSI disks containing these backups. The Windows "Installation Media" (ISO, DVD, USB key) cannot be used in lieu of the "Recovery Drive" because the MSiSCSI service is not configured in this environment and utilities such as iscsicli are not available on the distribution media.
+
+4. Beginning with Windows 11 and Windows Server 2022, the MSiSCSI service will not start in the Windows PE environment used by the "Recovery Drive". This is documented in Microsoft Case #2304230060000186. See below for more information.
+
+The focus of this project is to use the Microsoft utilities as is to configure a "Recovery Drive" and achieve the troubleshooting and/or bare metal restore required by the system.
+
+There are two scripts in this project:
+1. SetUpOEMRecovery will create/update a "Recovery Drive" for the system at hand. The script creates a DRIVERS directory in the root of the "Recovery Drive" and dumps all OEM drivers there. It then copies itself as well as the PnPUtil.exe utility, a recovery helper script (and an empty Windows XML Event Log, documented below).
+
+2. RECOVER.CMD is the helper script to configure the Windows PE environment in order to access (hopefully) all system components and perform a Bare Metal Restore, if need be.
+
+Note: The Windows XML Event Log (EVTX) format is documented in https://github.com/libyal/libevtx/blob/main/documentation/Windows%20XML%20Event%20Log%20(EVTX).asciidoc. The Windows PE environment has no utility to create an empty event file. If you don't wat to use the binary file provided with this project, you can copy any log from the %SystemRoot%\System32\WinEVT\Logs that has the minimum size of 69 632 under the name Emoty.evtx in the same directory as the above two scripts. On startup, RECOVER.CMD will display the headers of whatever file it will supply to the Event logger service.
+
 # SetUpOEMRecovery
 
 ## Purpose:
