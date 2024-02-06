@@ -16,9 +16,9 @@ The focus of this project is to use the Microsoft utilities as is to configure a
 There are two scripts in this project:
 1. SetUpOEMRecovery will create/update a "Recovery Drive" for the system at hand. The script creates a DRIVERS directory in the root of the "Recovery Drive" and dumps all OEM drivers there. It then copies itself as well as the PnPUtil.exe utility, a recovery helper script (and an empty Windows XML Event Log, documented below).
 
-2. RECOVER.CMD is the helper script to configure the Windows PE environment in order to access (hopefully) all system components and perform a Bare Metal Restore, if need be.
+2. RECOVER.CMD is the helper script that will configure the Windows PE environment in order to access (hopefully) all system components and perform a Bare Metal Restore, if need be. This includes initializing the network stack in Windows PE. starting required services such as MSiSCSI, the DNS client, and starting the disk configuration utility.
 
-Note: The Windows XML Event Log (EVTX) format is documented in https://github.com/libyal/libevtx/blob/main/documentation/Windows%20XML%20Event%20Log%20(EVTX).asciidoc. The Windows PE environment has no utility to create an empty event file. If you don't wat to use the binary file provided with this project, you can copy any log from the %SystemRoot%\System32\WinEVT\Logs that has the minimum size of 69 632 under the name Emoty.evtx in the same directory as the above two scripts. On startup, RECOVER.CMD will display the headers of whatever file it will supply to the Event logger service.
+Note: The Windows XML Event Log (EVTX) format is documented in https://github.com/libyal/libevtx/blob/main/documentation/Windows%20XML%20Event%20Log%20(EVTX).asciidoc. The Windows PE environment has no utility to create an empty event file. If you don't want to use the binary file provided with this project, you can copy any log from the %SystemRoot%\System32\WinEVT\Logs that has the minimum size of 69 632 under the name Emoty.evtx in the same directory as the above two scripts. On startup, RECOVER.CMD will display the headers of whatever file it will supply to the Event logger service.
 
 # SetUpOEMRecovery
 
