@@ -198,7 +198,7 @@ You have the option to install the OEM drivers stored on the USB drive.
 
 You should review the disk configuration before continuing. In particular, some Bare Metal Restore fail even if you are restoring the backup of the original system. In this instance, it is better to "clean" the partition table before attempting the Bare Metal Restore.
 
-You have the option to connect to a iSCSI target by specifying its name (preferred) or IP address. The script will enumerate all available targets and you will need to selct one.
+You have the option to connect to a iSCSI target by specifying its name (preferred) or IP address. The script will enumerate all available targets and you will need to select one.
 
 Finally, the script will start the BMRUI utility to allow restoring from either a local source (including iSCSI) or a remote share.
 
