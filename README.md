@@ -473,3 +473,14 @@ if exist "%~dp0\Empty.evtx" (
 
 ```
 
+# Converting a Hyper-V virtual machine to a physical machine
+
+Hyper-V virtual machines have no direct access to removable USB drives.
+
+Using some virtual USB server, you can run the SetUpOEMRecovery script within the virtual machine to create a physical Recovery Drive on the virtual USB server. You can then use this USB drive to boot a physical BIOS/UEFI compatible system and proceed to a bare metal restore of the virtal machine.
+
+This strategy was successfully tested with third party software Virtual Here (https://www.virtualhere.com/). The process involved no modification to the above scripts, no modfication to the virtual machine and no modification to the workstation hosting the Recovery Drive. Your mileage may vary. 
+
+
+
+
