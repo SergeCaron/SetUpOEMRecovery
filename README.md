@@ -186,7 +186,7 @@ Upon successful booting, the Windows Recovery Environment menu is displayed. At 
 
 In order to configure the system, we need to access a command prompt:
 
-![Option_2](Option_Command_Prompt.jpg)
+![Option_2](Ressources/Option_Command_Prompt.jpg)
 
 The Windows PE is running from a RAM disk labeled X:\ and does not provide a variable pointing to the real boot drive.
 
@@ -428,6 +428,48 @@ and the target will be shown in the DISKPART output, such as:
 	  Volume 2         Recovery     NTFS   Partition    989 MB  Healthy    Hidden
 	  Volume 3     D   RECOVERY     FAT32  Removable     32 GB  Healthy
 	  Volume 4         Hiccup 2020  NTFS   Partition    357 GB  Healthy
+
+```
+
+# A note regarding the MSiSCSI service in Windows PE builds 20348 and later
+
+Beginning with build 20348 (Windows 11 / Windows Sever 2022), starting the MSiSCSI service in Windows PE will fail with error 5 (access denied).
+
+For some reason, the service appears to validate the Event Log service configuration and will issue this error if the System.evtx is not available. The service will also fail with error 2 (file not found) if the Application.evtx log file is not available.
+
+As a simple bypass, the EventLog service is stopped, an empty log file of minimum size is copied under both names and the EventLog service is started.
+
+In order to provide coherent time references, the W32Time service is also started and the headers of both event logs are displayed, for sanity reasons.
+
+Note that stopping the W32Time service will also result in error 2 (File not Found): you can conclude that some other Event Log file is missing ;-).
+
+You can reuse this code in your own recovery media, with the above copyright.
+
+```
+Rem Install temporary workaround for Windows builds 20348 and above
+if exist "%~dp0\Empty.evtx" (
+
+	net Stop EventLog
+
+	Copy "%~dp0\Empty.evtx" %SystemRoot%\System32\WinEvt\Logs\System.evtx
+	Copy "%~dp0\Empty.evtx" %SystemRoot%\System32\WinEvt\Logs\Application.evtx
+
+	net Start EventLog
+
+	net Start W32Time
+	reg Query HKLM\SYSTEM\CurrentControlSet\Control\TimeZoneInformation /v TimeZoneKeyName
+	echo %Date% %Time%
+	echo.
+
+	wevtutil gli System
+	echo.
+
+	wevtutil gli Application
+	echo.
+
+	Rem "net stop W32Time" will result in a error 2 (File not found),
+	Rem an indication that some other Event log is missing.
+ )
 
 ```
 
