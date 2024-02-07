@@ -20,7 +20,7 @@ Rem Display text according to the default Windows page instead of using the OEM 
 chcp 1252 > NULL
 
 Echo Recovery Drive: %~dp0
-Echo ----------------------------
+Echo -------------------
 Echo.
 
 Rem Install temporary workaround for Windows builds 20348 and above

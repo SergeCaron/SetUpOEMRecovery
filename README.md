@@ -3,22 +3,22 @@
 Any modern Windows installation can create a "Recovery Drive" containing utilities to troubleshoot and possibly restore the system. Subject to Microsoft's restrictions, the target of the Bare Metal Restore can be different hardware, making the "Recovery Drive" a valuable tool.
 
 There are caveats:
-1. The Recovery Drive utility creator does not include all OEM drivers, in particular critical RAID and network drivers required to access the system itself or the system backup.
+1. The Recovery Drive utility creator MAY not include all OEM drivers, in particular critical RAID and network drivers required to access the system itself or the system backup.
 
 2. It may not be possible to slipstream these drivers into the Recovery Media Windows image : the DISM utility will not update WIM files larger than 4GB (split across multiple .SWM files).
 
-3. There are issues accessing iSCSI disks containing these backups. The Windows "Installation Media" (ISO, DVD, USB key) cannot be used in lieu of the "Recovery Drive" because the MSiSCSI service is not configured in this environment and utilities such as iscsicli are not available on the distribution media.
+3. There are issues accessing iSCSI disks containing these backups. The Windows "Installation Media" (ISO, DVD, USB key) cannot be used in lieu of the "Recovery Drive" because the MSiSCSI service is not configured in this environment and utilities such as iscsicli are not available on the "Installation Media".
 
-4. Beginning with Windows 11 and Windows Server 2022, the MSiSCSI service will not start in the Windows PE environment used by the "Recovery Drive". This is documented in Microsoft Case #2304230060000186. See below for more information.
+4. Beginning with Windows 11 and Windows Server 2022, the MSiSCSI service will not start in the Windows PE environment used by the "Recovery Drive". This is documented in Microsoft Case #2304230060000186. A bypass is required to start MSiSCSI. See below for more information.
 
-The focus of this project is to use the Microsoft utilities as is to configure a "Recovery Drive" and achieve the troubleshooting and/or bare metal restore required by the system.
+The focus of this project is to use the Microsoft utilities as is to configure a "Recovery Drive" and achieve the troubleshooting and/or bare metal restore required by your situation.
 
 There are two scripts in this project:
 1. SetUpOEMRecovery will create/update a "Recovery Drive" for the system at hand. The script creates a DRIVERS directory in the root of the "Recovery Drive" and dumps all OEM drivers there. It then copies itself as well as the PnPUtil.exe utility, a recovery helper script (and an empty Windows XML Event Log, documented below).
 
-2. RECOVER.CMD is the helper script that will configure the Windows PE environment in order to access (hopefully) all system components and perform a Bare Metal Restore, if need be. This includes initializing the network stack in Windows PE. starting required services such as MSiSCSI, the DNS client, and starting the disk configuration utility.
+2. RECOVER.CMD is the helper script that will configure the Windows PE environment in order to access (hopefully) all system components and perform a Bare Metal Restore, if need be. This includes initializing the network stack in Windows PE, starting required services such as MSiSCSI and the DNS client, and starting the disk configuration utility. As a convenience, the script will also launch BMRUI.EXE, the "Bare Metal Restore" utility: this utility is only vailable in the Windows PE environment. 
 
-Note: The Windows XML Event Log (EVTX) format is documented in https://github.com/libyal/libevtx/blob/main/documentation/Windows%20XML%20Event%20Log%20(EVTX).asciidoc. The Windows PE environment has no utility to create an empty event file. If you don't want to use the binary file provided with this project, you can copy any log from the %SystemRoot%\System32\WinEVT\Logs that has the minimum size of 69 632 under the name Emoty.evtx in the same directory as the above two scripts. On startup, RECOVER.CMD will display the headers of whatever file it will supply to the Event logger service.
+Note: The Windows XML Event Log (EVTX) format is documented in https://github.com/libyal/libevtx/blob/main/documentation/Windows%20XML%20Event%20Log%20(EVTX).asciidoc. The Windows PE environment has no utility to create an empty event file. If you don't want to use the binary file provided with this project, you can copy any log from the %SystemRoot%\System32\WinEVT\Logs that has the minimum size of 69 632 bytes under the name Empty.evtx in the same directory as the above two scripts. On startup, RECOVER.CMD will display the headers of whatever file it will supply to the Event logger service.
 
 # SetUpOEMRecovery
 
@@ -54,7 +54,7 @@ following commnand executed from an elevated PowerShell prompt:
 - [ ] Invoke the script, insert a USB key and press enter. The script will prompt for a USB key until a compatible device is inserted.
 - [ ] The script scans compatible USB drives for a ?:\sources\Reconstruct.WIM windows image file. If no such file is found, the script invokes the Microsoft RecoveryDrive utility. You have the option to reinitialize an existing recovery drive. Note that this utility will enumerate 'Fixed' and 'Removable' drive types, not just the selected drive. This process is repeated until a single compatible drive is identified. 
 - [ ] The script dumps all OEM drivers in the ?:\Drivers directory of the USB drive. You have the option to remove drivers that are not usually used in the Windows PE environment.
-- [ ] The script copies the RECOVER.CMD file in the root of the USB drive.
+- [ ] The script copies itself, the RECOVER.CMD script, and the Empty.evtx file in the root of the USB drive. These files must be in th same directory.
 - [ ] An enumeration of all OEM drivers present on the drive is displayed
 
 			
@@ -70,6 +70,11 @@ Here is a sample output:
 	Microsoft Windows NT 10.0.22631.0
 
 	Make sure a Microsoft RecoveryDrive compatible USB drive is connected and press RETURN to continue:
+```
+
+The USB drive size is validated against the requirement of your Windows build number. You may be offered to reinitialize the USB drive. In any case, a valid Recovery drive is required to continue:
+
+```
 	WARNING: The Microsoft RecoveryDrive utility will enumerate 'Fixed' and 'Removable' drive types.
 
 	DriveLetter FriendlyName FileSystemType DriveType HealthStatus OperationalStatus SizeRemaining     Size
@@ -101,6 +106,11 @@ Here is a sample output:
 
 
 	Enter 'Yes' to reinitialize this Recovery Drive (E:), anything else to continue:
+```
+
+As shown above, the Recovery drive creator has reformatted a 64GB USB drive into a BIOS/UEFI compatible drive. The next step is to dump to this drive all OEM drivers and retain only what could be used in the Windows PE environment.
+
+```
 	Updating drive E: with OEM drivers from this system.
 
 
@@ -165,6 +175,259 @@ Here is a sample output:
 
 
 	Done!
+
+```
+
+# Recover.CMD
+
+Upon successful booting, the Windows Recovery Environment menu is displayed. At a minimum, troubleshooting options are always available:
+
+![Option_1](Ressources/Option_Troubleshoot.jpg)
+
+In order to configure the system, we need to access a command prompt:
+
+![Option_2](Option_Command_Prompt.jpg)
+
+The Windows PE is running from a RAM disk labeled X:\ and does not provide a variable pointing to the real boot drive.
+
+Issue the command { mountvol | find ":\" } (without the braces ;-) and find the RECOVER.CMD script.
+
+The script presumes the system is connected to a network but does not presume any particular configuration other than Automatic IP Addressing in the absence of a DHCP server. In the following example, the system under test is connected directly to a NAS using a network cable.
+
+You have the option to install the OEM drivers stored on the USB drive.
+
+You should review the disk configuration before continuing. In particular, some Bare Metal Restore fail even if you are restoring the backup of the original system. In this instance, it is better to "clean" the partition table before attempting the Bare Metal Restore.
+
+You have the option to connect to a iSCSI target by specifying its name (preferred) or IP address. The script will enumerate all available targets and you will need to selct one.
+
+Finally, the script will start the BMRUI utility to allow restoring from either a local source (including iSCSI) or a remote share.
+
+You can abort and restart the script at any time.
+
+Here is a sample log:
+
+```
+	Microsoft Windows [Version 10.0.22621.2861]
+	(c) Microsoft Corporation. All rights reserved.
+
+	X:\Windows\System32>mountvol | find ":\"
+			C:\
+			D:\
+			X:\
+
+	X:\Windows\System32>d:\Recover.cmd
+
+	Recovery Drive: d:\
+	-------------------
+
+	The Windows Event Log service is stopping.
+	The Windows Event Log service was stopped successfully.
+
+			1 file(s) copied.
+			1 file(s) copied.
+	The Windows Event Log service is starting.
+	The Windows Event Log service was started successfully.
+
+	The Windows Time service is starting.
+	The Windows Time service was started successfully.
+
+
+	HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\TimeZoneInformation
+		TimeZoneKeyName    REG_SZ    Pacific Standard Time
+
+	Wed 02/07/2024  6:13:11.08
+
+	creationTime: 2024-02-07T14:13:14.1632334Z
+	lastAccessTime: 2024-02-07T14:13:14.1632334Z
+	lastWriteTime: 2023-06-30T22:43:42.0000000Z
+	fileSize: 69632
+	attributes: 32
+	numberOfLogRecords: 0
+	oldestRecordNumber: 0
+
+	creationTime: 2024-02-07T14:13:14.1632334Z
+	lastAccessTime: 2024-02-07T14:13:14.1632334Z
+	lastWriteTime: 2023-06-30T22:43:42.0000000Z
+	fileSize: 69632
+	attributes: 32
+	numberOfLogRecords: 0
+	oldestRecordNumber: 0
+
+	Do you want to install the OEM drivers present on the recovery drive?
+	Enter "Yes" (case sensitive) to install, anything else list installed OEM drivers:
+
+	Microsoft PnP Utility
+
+	Published Name:     oem1.inf
+	Original Name:      backupreaderdriver.inf
+	Provider Name:      Microsoft
+	Class Name:         System
+	Class GUID:         {4d36e97d-e325-11ce-bfc1-08002be10318}
+	Driver Version:     08/17/2012 6.2.9190.0
+	Signer Name:        Microsoft Windows Hardware Compatibility Publisher
+
+	Published Name:     oem0.inf
+	Original Name:      usbaapl64.inf
+	Provider Name:      Apple, Inc.
+	Class Name:         USB
+	Class GUID:         {36fc9e60-c465-11cf-8056-444553540000}
+	Driver Version:     05/19/2017 6.0.9999.69
+	Signer Name:        Microsoft Windows Hardware Compatibility Publisher
+
+	Published Name:     oem2.inf
+	Original Name:      netaapl64.inf
+	Provider Name:      Apple
+	Class Name:         Net
+	Class GUID:         {4d36e972-e325-11ce-bfc1-08002be10318}
+	Driver Version:     07/15/2013 1.8.5.1
+	Signer Name:        Microsoft Windows Hardware Compatibility Publisher
+
+
+	Network Initialization:
+	-----------------------
+
+	The DNS Client service is starting.
+	The DNS Client service was started successfully.
+
+
+	The command completed successfully.
+
+	Windows IP Configuration
+
+	   Host Name . . . . . . . . . . . . : minint-03nlk09
+	   Primary Dns Suffix  . . . . . . . :
+	   Node Type . . . . . . . . . . . . : Hybrid
+	   IP Routing Enabled. . . . . . . . : No
+	   WINS Proxy Enabled. . . . . . . . : No
+
+	Ethernet adapter Ethernet:
+
+	   Connection-specific DNS Suffix  . :
+	   Description . . . . . . . . . . . : Intel(R) Ethernet Connection I219-LM
+	   Physical Address. . . . . . . . . : 54-B2-03-8B-D6-97
+	   DHCP Enabled. . . . . . . . . . . : Yes
+	   Autoconfiguration Enabled . . . . : Yes
+	   Link-local IPv6 Address . . . . . : fe80::f92a:1d8f:7338:34b4%3(Preferred)
+	   Autoconfiguration IPv4 Address. . : 169.254.169.33(Preferred)
+	   Subnet Mask . . . . . . . . . . . : 255.255.0.0
+	   Default Gateway . . . . . . . . . :
+	   DHCPv6 IAID . . . . . . . . . . . : 55882243
+	   DHCPv6 Client DUID. . . . . . . . : 00-01-00-01-2D-55-7D-6A-54-B2-03-8B-D6-97
+	   DNS Servers . . . . . . . . . . . : fec0:0:0:ffff::1%1
+										   fec0:0:0:ffff::2%1
+										   fec0:0:0:ffff::3%1
+	   NetBIOS over Tcpip. . . . . . . . : Enabled
+
+	Confirm that the network is configured correctly or press (Ctrl)C to drop the connection to a network disk:
+
+	The Microsoft iSCSI Initiator Service service is starting.
+	The Microsoft iSCSI Initiator Service service was started successfully.
+
+
+	Enter the iSCSI server (IP address or hostname):
+
+	Review the configuration of disks and partitions (finish with the 'exit' command):
+
+	Microsoft DiskPart version 10.0.22621.1
+
+	Copyright (C) Microsoft Corporation.
+	On computer: MININT-1MI9VCS
+
+	DISKPART> list disk
+
+	  Disk ###  Status         Size     Free     Dyn  Gpt
+	  --------  -------------  -------  -------  ---  ---
+	  Disk 0    Online          931 GB   804 GB        *
+	  Disk 1    Online           58 GB    26 GB
+
+	DISKPART> select disk 0
+
+	Disk 0 is now the selected disk.
+
+	DISKPART> list partition
+
+	  Partition ###  Type              Size     Offset
+	  -------------  ----------------  -------  -------
+	  Partition 1    System              99 MB  1024 KB
+	  Partition 2    Reserved            16 MB   100 MB
+	  Partition 3    Primary            125 GB   116 MB
+	  Partition 4    Recovery           989 MB   126 GB
+
+	DISKPART> list volume
+
+	  Volume ###  Ltr  Label        Fs     Type        Size     Status     Info
+	  ----------  ---  -----------  -----  ----------  -------  ---------  --------
+	  Volume 0     C                NTFS   Partition    125 GB  Healthy
+	  Volume 1                      FAT32  Partition     99 MB  Healthy    Hidden
+	  Volume 2         Recovery     NTFS   Partition    989 MB  Healthy    Hidden
+	  Volume 3     D   RECOVERY     FAT32  Removable     32 GB  Healthy
+
+	DISKPART> exit
+
+	Leaving DiskPart...
+
+	Available Discs:
+		\\?\Volume{0753c7f3-d90f-44fd-b04c-14851c22b261}\
+			C:\
+		\\?\Volume{80c4f4c4-79dc-4370-a8c7-a3e9a67bb7d5}\
+		\\?\Volume{cdf86763-c5c2-11ee-935f-806e6f6e6963}\
+			D:\
+		\\?\Volume{377012df-46a8-47d5-8a58-ce4d000e6659}\
+		\\?\Volume{d9b257fc-684e-4dcb-ab79-03cfa2f6b750}\
+			X:\
+
+	X:\Windows\System32>
+
+```
+
+When a iSCSI server is specified, the iSCSI target must also be specified:
+
+```
+	Enter the iSCSI server (IP address or hostname): dragons
+	Microsoft iSCSI Initiator Version 10.0 Build 22621
+
+	The operation completed successfully.
+
+	Microsoft iSCSI Initiator Version 10.0 Build 22621
+
+	Targets List:
+		iqn.2013-03.com.wdc:dragons:stoic-vol1
+		iqn.2013-03.com.wdc:dragons:toothless-vol1
+		iqn.2013-03.com.wdc:dragons:hiccup-vol1
+		iqn.2013-03.com.wdc:dragons:astrid-vol1
+	The operation completed successfully.
+
+	Enter the iSCSI target: iqn.2013-03.com.wdc:dragons:hiccup-vol1
+	Microsoft iSCSI Initiator Version 10.0 Build 22621
+
+	Session Id is 0xffff8188cd3ff010-0x4000013700000002
+	Connection Id is 0xffff8188cd3ff010-0x1
+	The operation completed successfully.
+
+	Wait for iSCSI disk integration into Windows configuration (60 seconds)
+
+```
+
+and the target will be shown in the DISKPART output, such as:
+
+```
+	DISKPART> list disk
+
+	  Disk ###  Status         Size     Free     Dyn  Gpt
+	  --------  -------------  -------  -------  ---  ---
+	  Disk 0    Online          931 GB   804 GB        *
+	  Disk 1    Online           58 GB    26 GB
+	  Disk 2    Online          357 GB   131 MB        *
+
+	DISKPART> list volume
+
+	  Volume ###  Ltr  Label        Fs     Type        Size     Status     Info
+	  ----------  ---  -----------  -----  ----------  -------  ---------  --------
+	  Volume 0     C                NTFS   Partition    125 GB  Healthy
+	  Volume 1                      FAT32  Partition     99 MB  Healthy    Hidden
+	  Volume 2         Recovery     NTFS   Partition    989 MB  Healthy    Hidden
+	  Volume 3     D   RECOVERY     FAT32  Removable     32 GB  Healthy
+	  Volume 4         Hiccup 2020  NTFS   Partition    357 GB  Healthy
 
 ```
 
