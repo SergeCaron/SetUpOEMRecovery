@@ -9,9 +9,11 @@ There are caveats:
 
 3. There are issues accessing iSCSI disks containing these backups. The Windows "Installation Media" (ISO, DVD, USB key) cannot be used in lieu of the "Recovery Drive" because the MSiSCSI service is not configured in this environment and utilities such as iscsicli are not available on the "Installation Media".
 
-4. Beginning with Windows 11 and Windows Server 2022, the MSiSCSI service will not start in the Windows PE environment used by the "Recovery Drive". This is documented in Microsoft Case #2304230060000186. A bypass is required to start MSiSCSI. See below for more information.
+4. Beginning with Windows 11 and Windows Server 2022, the MSiSCSI service will not start in the Windows PE environment used by the "Recovery Drive". This is documented in Microsoft Case #2304230060000186. A workaround is required to start MSiSCSI. See below for more information.
 
 The focus of this project is to use the Microsoft utilities as is to configure a "Recovery Drive" and achieve the troubleshooting and/or bare metal restore required by your situation.
+
+Windows Server Backup or one of its workstation variants (Windows Backup, System Image Backup, etc.) is used to create the system image required to restore the system: this is not covered here.
 
 There are two scripts in this project:
 1. SetUpOEMRecovery will create/update a "Recovery Drive" for the system at hand. The script creates a DRIVERS directory in the root of the "Recovery Drive" and dumps all OEM drivers there. It then copies itself as well as the PnPUtil.exe utility, a recovery helper script (and an empty Windows XML Event Log, documented below).
@@ -437,7 +439,7 @@ Beginning with build 20348 (Windows 11 / Windows Sever 2022), starting the MSiSC
 
 For some reason, the service appears to validate the Event Log service configuration and will issue this error if the System.evtx is not available. The service will also fail with error 2 (file not found) if the Application.evtx log file is not available.
 
-As a simple bypass, the EventLog service is stopped, an empty log file of minimum size is copied under both names and the EventLog service is started.
+As a simple workaround, the EventLog service is stopped, an empty log file of minimum size is copied under both names and the EventLog service is started.
 
 In order to provide coherent time references, the W32Time service is also started and the headers of both event logs are displayed, for sanity reasons.
 

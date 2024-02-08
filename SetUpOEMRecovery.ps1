@@ -1,10 +1,12 @@
 ##******************************************************************
-## Revision date: 2024.01.31
+## Revision date: 2024.02.08
 ##
-##		2023.07.04: Proof of concept / Initial release
+##		2022.07.08: Proof of concept / Initial release
+##		2023.07.04: Closure of Microsoft 2304230060000186: workaround MSiSCSI bug
 ##		2024.01.31: Skip non-existent language packs
+##		2024.02.08: Revise translation
 ##
-## Copyright (c) 2023-2024 PC-Évolution enr.
+## Copyright (c) 2022-2024 PC-Évolution enr.
 ## This code is licensed under the GNU General Public License (GPL).
 ##
 ## THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
