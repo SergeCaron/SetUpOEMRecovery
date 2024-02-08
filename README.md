@@ -182,6 +182,12 @@ As shown above, the Recovery drive creator has reformatted a 64GB USB drive into
 
 # Recover.CMD
 
+## Purpose:
+
+Configure at runtime the target system in order to access the network and optionnaly perform a Bare Metal Restore.
+
+## Operation
+
 Upon successful booting, the Windows Recovery Environment menu is displayed. At a minimum, troubleshooting options are always available:
 
 ![Option_1](Ressources/Option_Troubleshoot.jpg)
