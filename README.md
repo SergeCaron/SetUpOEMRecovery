@@ -20,7 +20,7 @@ There are two scripts in this project:
 
 2. RECOVER.CMD is the helper script that will configure the Windows PE environment in order to access (hopefully) all system components and perform a Bare Metal Restore, if need be. This includes initializing the network stack in Windows PE, starting required services such as MSiSCSI and the DNS client, and starting the disk configuration utility. As a convenience, the script will also launch BMRUI.EXE, the "Bare Metal Restore" utility: this utility is only vailable in the Windows PE environment. 
 
-Note: The Windows XML Event Log (EVTX) format is documented in https://github.com/libyal/libevtx/blob/main/documentation/Windows%20XML%20Event%20Log%20(EVTX).asciidoc. The Windows PE environment has no utility to create an empty event file. If you don't want to use the binary file provided with this project, you can copy any log from the %SystemRoot%\System32\WinEVT\Logs that has the minimum size of 69 632 bytes under the name Empty.evtx in the same directory as the above two scripts. On startup, RECOVER.CMD will display the headers of whatever file it will supply to the Event logger service.
+Note: The Windows XML Event Log (EVTX) format is documented in *[Windows XML Event Log (EVTX) format](https://github.com/libyal/libevtx/blob/main/documentation/Windows%20XML%20Event%20Log%20(EVTX).asciidoc)*. The Windows PE environment has no utility to create an empty event file. If you don't want to use the binary file provided with this project, you can copy any log from the %SystemRoot%\System32\WinEVT\Logs that has the minimum size of 69 632 bytes under the name Empty.evtx in the same directory as the above two scripts. On startup, RECOVER.CMD will display the headers of whatever file it will supply to the Event logger service.
 
 # SetUpOEMRecovery
 
@@ -60,7 +60,7 @@ following commnand executed from an elevated PowerShell prompt:
 - [ ] An enumeration of all OEM drivers present on the drive is displayed
 
 			
-Here is a sample output:
+Here is a sample output (with additional comments):
 
 ```
 	Windows PowerShell
@@ -198,7 +198,7 @@ In order to configure the system, we need to access a command prompt:
 
 The Windows PE is running from a RAM disk labeled X:\ and does not provide a variable pointing to the real boot drive.
 
-Issue the command { mountvol | find ":\" } (without the braces ;-) and find the RECOVER.CMD script.
+Issue the command { **mountvol | find ":\\"** } (without the braces ;-) and find the RECOVER.CMD script.
 
 The script presumes the system is connected to a network but does not presume any particular configuration other than Automatic IP Addressing in the absence of a DHCP server. In the following example, the system under test is connected directly to a NAS using a network cable.
 
