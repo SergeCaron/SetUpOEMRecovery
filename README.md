@@ -443,6 +443,40 @@ and the target will be shown in the DISKPART output, such as:
 
 Beginning with build 20348 (Windows 11 / Windows Sever 2022), starting the MSiSCSI service in Windows PE will fail with error 5 (access denied).
 
+<details>
+
+<summary>Demonstrate MSiSCSI failure in the WinRE environment</summary>
+
+### Demonstrate MSiSCSI failure in the WinRE environment
+
+This example uses Windows Server 2022.
+
+Restart the server into the WinRE environment using Shift-Restart: ![Step_1](Ressources/1-Windows_Server_2022_Restart.jpg)
+
+Select "Troubleshoot": ![Step_2](Ressources/2-Windows_Server_2022_Recovery_Environment.jpg)
+
+Select "Command Prompt": ![Step_3](Ressources/3-Windows_Server_2022_RE_Advanced_Options.jpg)
+
+Verify with ipconfig that a network adapter is active and start MSiSCSI: the command fails with Error 5, Protection Violation running under the System principal: ![Step_4](Ressources/4-Windows_Server_2022_RE_MSiSCSI_failure.jpg)
+
+</details>
+
+<details>
+
+<summary>Demonstrate MSiSCSI failure from the Windows Installation Media</summary>
+
+### Demonstrate MSiSCSI failure from the Windows Installation Media
+
+This example uses Windows Server 2022.
+
+Boot the distribution media: ![Step_1](Ressources/A-Boot_Windows_Server_2022_Media.jpg)
+
+Drop to a command prompt ushing Shift-F10: ![Step_2](Ressources/B-Drop_to_a_command_prompt.jpg)
+
+Verify with ipconfig that a network adapter is active and start RegEdit. Verify that the MSiSCSI is not part of the configuration: ![Step_3](Ressources/C-Missing_MSiSCSI_service_entry.jpg)
+
+</details>
+
 For some reason, the service appears to validate the Event Log service configuration and will issue this error if the System.evtx is not available. The service will also fail with error 2 (file not found) if the Application.evtx log file is not available.
 
 As a simple workaround, the EventLog service is stopped, an empty log file of minimum size is copied under both names and the EventLog service is started.
@@ -480,7 +514,6 @@ if exist "%~dp0\Empty.evtx" (
  )
 
 ```
-
 # Converting a Hyper-V virtual machine to a physical machine
 
 Hyper-V virtual machines have no direct access to removable USB drives.
