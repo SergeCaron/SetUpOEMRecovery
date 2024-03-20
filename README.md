@@ -86,6 +86,10 @@ The USB drive size is validated against the requirement of your Windows build nu
 
 	Press RETURN to invoke the RecoveryDrive creator:
 ```
+<details>
+
+<summary>Show Create Recovery Drive progress detail</summary>
+
 ![Step_1](Ressources/Create_Recovery_Drive_Step_1.jpg)
 
 ![Step_2](Ressources/Create_Recovery_Drive_Step_2.jpg)
@@ -97,6 +101,8 @@ The USB drive size is validated against the requirement of your Windows build nu
 ![Step_5](Ressources/Create_Recovery_Drive_Step_5.jpg)
 
 ![USBKey](Ressources/Recovery_USB_Key.jpg)
+
+</details>
 
 ```
 	Make sure a Microsoft RecoveryDrive compatible USB drive is connected and press RETURN to continue:
