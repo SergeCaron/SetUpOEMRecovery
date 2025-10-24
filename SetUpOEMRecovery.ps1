@@ -1,10 +1,12 @@
 ##******************************************************************
-## Revision date: 2024.03.13
+## Revision date: 2025.10.24
 ##
 ##		2022.07.08: Proof of concept / Initial release
 ##		2023.07.04: Closure of Microsoft 2304230060000186: workaround MSiSCSI bug
 ##		2024.01.31: Skip non-existent language packs
 ##		2024.02.08: Revise translation
+##		2025.10.24:	Allow MBR drives with no partitions since Windows 1x does not
+##					allow formating FAT32 partitions on larger disks (up to 2TB)
 ##
 ## Copyright (c) 2022-2024 PC-Évolution enr.
 ## This code is licensed under the GNU General Public License (GPL).
@@ -31,7 +33,7 @@ Do {
 		# Enumerate compatible USB drives (MBR with single partition and appropriate size)
 		# Note:	under the MBR scheme, a single partition cannot contain more than a single volume
 		#		(see https://learn.microsoft.com/en-us/windows/win32/fileio/basic-and-dynamic-disks)
-		[System.Object[]] $TargetVolumes = Get-Disk | Where-Object -FilterScript { $_.Bustype -Eq "USB" -and $_.PartitionStyle -Eq "MBR" -and ($_.NumberOfPartitions -eq 1) -and $_.Size -ge 4GB } `
+		[System.Object[]] $TargetVolumes = Get-Disk | Where-Object -FilterScript { $_.Bustype -Eq "USB" -and $_.PartitionStyle -Eq "MBR" -and ($_.NumberOfPartitions -le 1) -and $_.Size -ge 4GB } `
 		| Get-Partition | Get-Volume
 		# Quick display ;-)
 		Write-Warning "The Microsoft RecoveryDrive utility will enumerate 'Fixed' and 'Removable' drive types."
