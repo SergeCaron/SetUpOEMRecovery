@@ -7,8 +7,9 @@
 ##		2024.02.08: Revise translation
 ##		2025.10.24:	Allow MBR drives with no partitions since Windows 1x does not
 ##					allow formating FAT32 partitions on larger disks (up to 2TB)
+##		2025.10.26:	Actually, allow RecoveryDrive to run during drive scan.
 ##
-## Copyright (c) 2022-2024 PC-Évolution enr.
+## Copyright (c) 2022-2025 PC-Évolution enr.
 ## This code is licensed under the GNU General Public License (GPL).
 ##
 ## THIS CODE IS PROVIDED *AS IS* WITHOUT WARRANTY OF
@@ -33,11 +34,21 @@ Do {
 		# Enumerate compatible USB drives (MBR with single partition and appropriate size)
 		# Note:	under the MBR scheme, a single partition cannot contain more than a single volume
 		#		(see https://learn.microsoft.com/en-us/windows/win32/fileio/basic-and-dynamic-disks)
-		[System.Object[]] $TargetVolumes = Get-Disk | Where-Object -FilterScript { $_.Bustype -Eq "USB" -and $_.PartitionStyle -Eq "MBR" -and ($_.NumberOfPartitions -le 1) -and $_.Size -ge 4GB } `
+		[System.Object[]] $TargetVolumes = Get-Disk | Where-Object -FilterScript { $_.Bustype -Eq "USB" -and $_.PartitionStyle -Eq "MBR" -and ($_.NumberOfPartitions -eq 1) -and $_.Size -ge 4GB } `
 		| Get-Partition | Get-Volume
-		# Quick display ;-)
-		Write-Warning "The Microsoft RecoveryDrive utility will enumerate 'Fixed' and 'Removable' drive types."
-		$TargetVolumes | Format-Table -AutoSize
+		
+		If ( $TargetVolumes.Count -eq 0) {
+				If ($(Read-Host "No RecoveryDrive compatible disk found. Enter 'Yes' to launch the Recovery Drive creator, anything else to rescan").tolower().StartsWith('yes')) {
+					# Create a Recovery Drive
+					Start-Process -FilePath $Env:windir\System32\RecoveryDrive.exe -Wait
+					# It has been a long time: force a new scan of USB drives
+				}
+		}
+		Else {
+				# Quick display ;-)
+				Write-Warning "The Microsoft RecoveryDrive utility will enumerate 'Fixed' and 'Removable' drive types."
+				$TargetVolumes | Format-Table -AutoSize
+		}
 	} Until ( $TargetVolumes.Count -gt 0)
 
 	# Do we already have a Recovery Drive (or something that looks like it ;-)
