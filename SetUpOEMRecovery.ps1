@@ -8,7 +8,9 @@
 ##		2025.10.24:	Allow MBR drives with no partitions since Windows 1x does not
 ##					allow formating FAT32 partitions on larger disks (up to 2TB)
 ##		2025.10.26:	Actually, allow RecoveryDrive to run during drive scan.
+##		2025.10.27:	Provide debugging information if RecoveryDrive hangs
 ##
+
 ## Copyright (c) 2022-2025 PC-Évolution enr.
 ## This code is licensed under the GNU General Public License (GPL).
 ##
@@ -19,6 +21,11 @@
 ##
 ##******************************************************************
 
+param(
+	# Default parameter values
+	[parameter( Mandatory = $false )] [switch] $ShowInfo 
+)
+
 #
 Write-Host ""
 Write-Host $([System.Environment]::OSVersion.VersionString)
@@ -27,6 +34,72 @@ Write-Host ""
 # Required USB key size: sometime after Windows 10 (1809)/Windows Server 2019, the required key size is 16GB
 $TargetSize = 8GB
 If ([System.Environment]::OSVersion.Version.Build -gt 17763) { $TargetSize = 16GB }
+
+If ($ShowInfo) {
+
+	# Presume the location of the RecoveryDrive log
+	$RecoveryDriveLog = "$Env:windir\Logs\RecoveryDrive\setupact.log"
+	
+	If (Test-Path -Path $RecoveryDriveLog) {
+		Write-Host "Please wait while the RecoveryDrive utility log is being scanned ..."
+		Write-Host
+
+		$InfoLines = Select-String -Path $RecoveryDriveLog `
+			-Pattern "LayoutUsb: Target directory size" -Context 1,2 -SimpleMatch
+
+		If ($InfoLines.Count -gt 0) {
+			$LastRun = $InfoLines.Count - 1
+			Write-Host "Log entries from the last RecoveryDrive run:"
+			Write-Host "  ", $InfoLines[$LastRun].Context.PreContext
+			Write-Host "  ", $InfoLines[$LastRun].Line
+			Write-Host "  ", $Infolines[$Lastrun].Context.PostContext[0]
+			Write-Host "  ", $Infolines[$Lastrun].Context.PostContext[1]
+			Write-Host
+			$Size = $InfoLines[$LastRun].Line -match '\[(.*?)\]'
+			Write-Host "Expected size of the Recovery Environment:", $($([math]::ceiling( $Matches[1] / 1GB )).ToString() + "GB")
+			$Size = $InfoLines[$LastRun].Context.PostContext[1] -match '\[(\d\d\d*?)\]'
+			Write-Host "Actual size of the Recovery Key (if available):", $($([math]::ceiling( $Matches[1] / 1GB )).ToString() + "GB")
+			Write-Host
+
+			Read-Host "Press Enter for additional debugging information"
+		}
+		Else {
+			Write-Warning "The RecoveryDrive utility must run at least once to estimate file sizes."
+			Write-Host
+		}
+	}
+	Else {
+		Write-Warning "The RecoveryDrive log is not found on this system."
+		Write-Host
+	}
+	Write-Host "You may be able to recover some space by cleaning the Component Store using the command"
+	Write-Host "  DISM /Online /Cleanup-Image /StartComponentCleanup /ResetBase"
+	Write-Host
+	Write-Host "Analysis of the component store:"
+	DISM /Online /Cleanup-Image /AnalyzeComponentStore
+	Write-Host
+
+	Read-Host "Press Enter for additional debugging information"
+	Write-Host "Finally, you may have to remove some of these non Microsoft Apps"
+	Write-Host "which will also be stored on the Recovery Drive:"
+	$NonMicrosoftApps = @()
+	Get-AppxPackage | Where-Object { -not ($_.Publisher -like "CN=Microsoft*") } | `
+		ForEach-Object {
+			$packagePath = $_.InstallLocation
+			If (Test-Path $packagePath) {
+				$size = (Get-ChildItem -Path $packagePath -Recurse -ErrorAction SilentlyContinue | `
+							Measure-Object -Property Length -Sum).Sum
+				$NonMicrosoftApps += [PSCustomObject]@{
+										Name = $_.Name
+										SizeInMB = [math]::Round($size / 1MB, 2)
+										PackageFullName = $_.PackageFullName
+									}
+			}
+		}
+	$NonMicrosoftApps | Format-Table -AutoSize
+	Write-Host
+
+}
 
 Do {
 	Do {

@@ -50,6 +50,39 @@ following commnand executed from an elevated PowerShell prompt:
 			Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy Unrestricted
 ------
 
+## Size hints
+
+The RecoveryDrive utility will not display your USB device when the estimated size of the recovery media is greater than 32GB. The recovery drive boot partition is limited to 32GB: for USB keys larger than 32GB, the RecoveryDrive will create a 32GB FAT32 partition. Note that such a partion on a MBR drive cannot be created using the Disk Management utility in the Windows GUI.
+
+Using the -ShowInfo parameter, the script will display the size estimates of the previous RecoveryDrive run. These sizes are reported in bytes and the script converts the estimated size of the recovery environment and the size of the USB key that was used in the previous run:
+
+```
+PS C:\Users\<WhoAmI>\Desktop> .\SetUpOEMRecovery.ps1 -ShowInfo
+
+Microsoft Windows NT 10.0.26200.0
+
+Please wait while the RecoveryDrive utility log is being scanned ...
+
+Log entries from the last RecoveryDrive run:
+   2025-10-26 04:36:28, Info                         LayoutUsb: Source directory size -> [42576122217] bytes
+   2025-10-26 04:36:28, Info                         LayoutUsb: Target directory size -> [15444014505] bytes
+   2025-10-26 04:36:28, Info                         LayoutUsb: Source maximum file size -> [831212522] bytes
+   2025-10-26 04:36:28, Info                         LayoutUsb: Disk [1] size -> [123048296448] bytes
+
+Expected size of the Recovery Environment: 15GB
+Actual size of the Recovery Key (if available): 115GB
+
+Press Enter for additional debugging information:
+
+
+```
+
+The script also displays the "Actual Size of Component Store" and the storage requiements of non-Microsoft packages that will be included on the recovery drive. This additional debugging information is not shown.
+
+You are left to your own devices to bring the total size below the 32GB limit.
+
+------
+
 ## Operation:
 
 - [ ] Open an elevated PowerShell prompt.
