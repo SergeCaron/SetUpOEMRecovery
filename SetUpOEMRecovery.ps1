@@ -33,21 +33,21 @@ Write-Host ""
 
 # Required USB key size: sometime after Windows 10 (1809)/Windows Server 2019, the required key size is 16GB
 $TargetSize = 8GB
-If ([System.Environment]::OSVersion.Version.Build -gt 17763) { $TargetSize = 16GB }
+if ([System.Environment]::OSVersion.Version.Build -gt 17763) { $TargetSize = 16GB }
 
-If ($ShowInfo) {
+if ($ShowInfo) {
 
 	# Presume the location of the RecoveryDrive log
 	$RecoveryDriveLog = "$Env:windir\Logs\RecoveryDrive\setupact.log"
 	
-	If (Test-Path -Path $RecoveryDriveLog) {
+	if (Test-Path -Path $RecoveryDriveLog) {
 		Write-Host "Please wait while the RecoveryDrive utility log is being scanned ..."
 		Write-Host
 
 		$InfoLines = Select-String -Path $RecoveryDriveLog `
-			-Pattern "LayoutUsb: Target directory size" -Context 1,2 -SimpleMatch
+			-Pattern "LayoutUsb: Target directory size" -Context 1, 2 -SimpleMatch
 
-		If ($InfoLines.Count -gt 0) {
+		if ($InfoLines.Count -gt 0) {
 			$LastRun = $InfoLines.Count - 1
 			Write-Host "Log entries from the last RecoveryDrive run:"
 			Write-Host "  ", $InfoLines[$LastRun].Context.PreContext
@@ -63,12 +63,12 @@ If ($ShowInfo) {
 
 			Read-Host "Press Enter for additional debugging information"
 		}
-		Else {
+		else {
 			Write-Warning "The RecoveryDrive utility must run at least once to estimate file sizes."
 			Write-Host
 		}
 	}
-	Else {
+	else {
 		Write-Warning "The RecoveryDrive log is not found on this system."
 		Write-Host
 	}
@@ -84,79 +84,79 @@ If ($ShowInfo) {
 	Write-Host "which will also be stored on the Recovery Drive:"
 	$NonMicrosoftApps = @()
 	Get-AppxPackage | Where-Object { -not ($_.Publisher -like "CN=Microsoft*") } | `
-		ForEach-Object {
+			ForEach-Object {
 			$packagePath = $_.InstallLocation
-			If (Test-Path $packagePath) {
+			if (Test-Path $packagePath) {
 				$size = (Get-ChildItem -Path $packagePath -Recurse -ErrorAction SilentlyContinue | `
 							Measure-Object -Property Length -Sum).Sum
-				$NonMicrosoftApps += [PSCustomObject]@{
-										Name = $_.Name
-										SizeInMB = [math]::Round($size / 1MB, 2)
-										PackageFullName = $_.PackageFullName
-									}
+					$NonMicrosoftApps += [PSCustomObject]@{
+						Name            = $_.Name
+						SizeInMB        = [math]::Round($size / 1MB, 2)
+						PackageFullName = $_.PackageFullName
+					}
+				}
 			}
-		}
 	$NonMicrosoftApps | Format-Table -AutoSize
 	Write-Host
 
 }
 
-Do {
-	Do {
+do {
+	do {
 		$Junk = Read-Host -Prompt "Make sure a Microsoft RecoveryDrive compatible USB drive is connected and press RETURN to continue"
 		# Enumerate compatible USB drives (MBR with single partition and appropriate size)
 		# Note:	under the MBR scheme, a single partition cannot contain more than a single volume
 		#		(see https://learn.microsoft.com/en-us/windows/win32/fileio/basic-and-dynamic-disks)
-		[System.Object[]] $TargetVolumes = Get-Disk | Where-Object -FilterScript { $_.Bustype -Eq "USB" -and $_.PartitionStyle -Eq "MBR" -and ($_.NumberOfPartitions -eq 1) -and $_.Size -ge 4GB } `
+		[System.Object[]] $TargetVolumes = Get-Disk | Where-Object -FilterScript { $_.Bustype -eq "USB" -and $_.PartitionStyle -eq "MBR" -and ($_.NumberOfPartitions -eq 1) -and $_.Size -ge 4GB } `
 		| Get-Partition | Get-Volume
 		
-		If ( $TargetVolumes.Count -eq 0) {
-				If ($(Read-Host "No RecoveryDrive compatible disk found. Enter 'Yes' to launch the Recovery Drive creator, anything else to rescan").tolower().StartsWith('yes')) {
-					# Create a Recovery Drive
-					Start-Process -FilePath $Env:windir\System32\RecoveryDrive.exe -Wait
-					# It has been a long time: force a new scan of USB drives
-				}
+		if ( $TargetVolumes.Count -eq 0) {
+			if ($(Read-Host "No RecoveryDrive compatible disk found. Enter 'Yes' to launch the Recovery Drive creator, anything else to rescan").tolower().StartsWith('yes')) {
+				# Create a Recovery Drive
+				Start-Process -FilePath $Env:windir\System32\RecoveryDrive.exe -Wait
+				# It has been a long time: force a new scan of USB drives
+			}
 		}
-		Else {
-				# Quick display ;-)
-				Write-Warning "The Microsoft RecoveryDrive utility will enumerate 'Fixed' and 'Removable' drive types."
-				$TargetVolumes | Format-Table -AutoSize
+		else {
+			# Quick display ;-)
+			Write-Warning "The Microsoft RecoveryDrive utility will enumerate 'Fixed' and 'Removable' drive types."
+			$TargetVolumes | Format-Table -AutoSize
 		}
-	} Until ( $TargetVolumes.Count -gt 0)
+	} until ( $TargetVolumes.Count -gt 0)
 
 	# Do we already have a Recovery Drive (or something that looks like it ;-)
 	$TargetVolume = @()
-	ForEach ($Volume in $TargetVolumes.DriveLetter) { if ( Test-Path -Path "$Volume`:\sources\Reconstruct.WIM" -PathType Leaf ) { $TargetVolume += $Volume } }
+	foreach ($Volume in $TargetVolumes.DriveLetter) { if ( Test-Path -Path "$Volume`:\sources\Reconstruct.WIM" -PathType Leaf ) { $TargetVolume += $Volume } }
 
-	If ($TargetVolume.Count -eq 0) {
+	if ($TargetVolume.Count -eq 0) {
 		$Junk = Read-Host -Prompt "Press RETURN to invoke the RecoveryDrive creator"
 		# Create a Recovery Drive
 		Start-Process -FilePath $Env:windir\System32\RecoveryDrive.exe -Wait
 		# We don't have of clue of what happened in the past few HOURS (most likely ...) or the last few minutes if user cancelled the RecoveryDrive creator
 	}
-	ElseIf ($TargetVolume.Count -gt 1) {
+	elseif ($TargetVolume.Count -gt 1) {
 		Write-Host "These appear to be valid recovery drives:"
 		$TargetVolume | ForEach-Object { "  $_`:\" }
 		Write-Warning "Please connect a single Recovery Drive!"
 		Write-Warning ""
 	}
-	Else {
+	else {
 		# Make a scalar out of this array
 		[String] $USBRecovery = "$TargetVolume`:"
 		# Do not reinitialize the USB drive from which we are running ;-)
-		If ( $(Split-Path -Path $MyInvocation.InvocationName -Parent) -ne "$USBRecovery\" ) {
-			If ( $(Get-Volume -DriveLetter $TargetVolume).Size -ge $TargetSize ) {
-				If ($(Read-Host "Enter 'Yes' to reinitialize this Recovery Drive ($USBRecovery), anything else to continue").tolower().StartsWith('yes')) {
+		if ( $(Split-Path -Path $MyInvocation.InvocationName -Parent) -ne "$USBRecovery\" ) {
+			if ( $(Get-Volume -DriveLetter $TargetVolume).Size -ge $TargetSize ) {
+				if ($(Read-Host "Enter 'Yes' to reinitialize this Recovery Drive ($USBRecovery), anything else to continue").tolower().StartsWith('yes')) {
 					# Create a Recovery Drive
 					Start-Process -FilePath $Env:windir\System32\RecoveryDrive.exe -Wait
 					# It has been a long time: force a new scan of USB drives
 					$TargetVolume = @()
 				}
 			}
-			Else { Write-Warning "Drive $$USBRecovery is too small to create a Recovery Drive from this system" }
+			else { Write-Warning "Drive $$USBRecovery is too small to create a Recovery Drive from this system" }
 		}
 	}
-} Until ( $TargetVolume.Count -eq 1 )
+} until ( $TargetVolume.Count -eq 1 )
 
 # Set up the directory structure expected by the "Recover.cmd" utility in the WinPE environment
 $USBRecovery = "$TargetVolume`:"
@@ -181,21 +181,21 @@ else {
 	# Get installed languages
 	$LanguagePacks = (Get-WmiObject -Class Win32_OperatingSystem).MUILanguages
 
-	ForEach ( $Ressources in $LanguagePacks ) {
+	foreach ( $Ressources in $LanguagePacks ) {
 		if ( Test-Path -Path "$USBRecovery\Drivers\$Ressources" -PathType Container )
 		{ Write-Warning "$USBRecovery\Drivers\$Ressources already exists." }
 		else { New-Item "$USBRecovery\Drivers\$Ressources" -ItemType Directory }
 
-		Try {
+		try {
 			Copy-Item -Path "$Env:WinDir\System32\$Ressources\PnPUtil.exe.mui" `
 				-Destination "$USBRecovery\Drivers\$Ressources" -ErrorAction Stop 
 		}
-		Catch { Write-Warning "Skipping $USBRecovery\Drivers\$Ressources\PnPUtil.exe.mui" }
+		catch { Write-Warning "Skipping $USBRecovery\Drivers\$Ressources\PnPUtil.exe.mui" }
 	}
 }
 
 # Copy/override utilities
-If ($(Split-Path -Path $MyInvocation.InvocationName -Parent) -ne "$USBRecovery\") {
+if ($(Split-Path -Path $MyInvocation.InvocationName -Parent) -ne "$USBRecovery\") {
 	Copy-Item -Path $MyInvocation.InvocationName -Destination "$USBRecovery\"
 	Copy-Item -Path $MyInvocation.InvocationName.Replace($MyInvocation.MyCommand, "Recover.cmd") -Destination "$USBRecovery\"
 	Copy-Item -Path $MyInvocation.InvocationName.Replace($MyInvocation.MyCommand, "Empty.evtx") -Destination "$USBRecovery\"
@@ -210,13 +210,13 @@ $UnnecessaryClassesInWinPE = @("DISPLAY", "MEDIA", "BLUETOOTH", "PRINTER", "SOFT
 
 $Drivers = Get-ChildItem -Path "$USBRecovery\Drivers\*" -Directory -Depth 0 | Sort-Object -Property Name
 $DriversWithClass = @()
-ForEach ($Driver in $Drivers) {
+foreach ($Driver in $Drivers) {
  $Infs = Get-ChildItem -Path $($Driver.FullName + "\\*.inf") -File -Depth 0
-	ForEach ($Inf in $Infs) {
-		Get-Content $Inf.FullName | Where-Object { $_ -Match '^\s*Class\s*=\s*(\S*)' } | `
+	foreach ($Inf in $Infs) {
+		Get-Content $Inf.FullName | Where-Object { $_ -match '^\s*Class\s*=\s*(\S*)' } | `
 				ForEach-Object {
 				$DriverClass = $Matches[1].ToUpper()
-				If ($UnnecessaryClassesInWinPE.Contains($DriverClass) ) {
+				if ($UnnecessaryClassesInWinPE.Contains($DriverClass) ) {
 					$DriversWithClass += New-Object PSObject -Property @{ 
 						Driver = $Driver.FullName 
 						Class  = $DriverClass
@@ -227,10 +227,10 @@ ForEach ($Driver in $Drivers) {
 }
 if ($DriversWithClass.Count -gt 0) {
 	Write-Warning "These drivers are probably useless in the Windows PE environment:"
-	ForEach ( $Candidate in $DriversWithClass )
+	foreach ( $Candidate in $DriversWithClass )
 	{ Write-Warning "  $Candidate " }
-	If ($(Read-Host "Enter 'Yes' to remove these drivers, anything else to continue").tolower().StartsWith('yes')) {
-		ForEach ( $Candidate in $DriversWithClass )
+	if ($(Read-Host "Enter 'Yes' to remove these drivers, anything else to continue").tolower().StartsWith('yes')) {
+		foreach ( $Candidate in $DriversWithClass )
 		{ Remove-Item -LiteralPath $Candidate.Driver -Force -Recurse }
 		# Re-enumerate what is left ;-)
 		$Drivers = Get-ChildItem -Path "$USBRecovery\Drivers\*" -Directory -Depth 0 | Sort-Object -Property Name
@@ -242,11 +242,11 @@ if ($DriversWithClass.Count -gt 0) {
 $LargeDrivers = $Drivers | Where-Object { $(Get-ChildItem $_.FullName -Recurse -File | Measure-Object -Property Length -Sum | Select-Object -ExpandProperty Sum) -ge 40mb }
 if ($LargeDrivers.Count -gt 0) {
 	Write-Warning "These drivers are probably useless in the Windows PE environment:"
-	ForEach ( $LargeDriver in $LargeDrivers )
+	foreach ( $LargeDriver in $LargeDrivers )
 	{ Write-Warning "  $LargeDriver" }
 	
-	If ($(Read-Host "Enter 'Yes' to remove these drivers, anything else to continue").tolower().StartsWith('yes')) {
-		ForEach ( $LargeDriver in $LargeDrivers )
+	if ($(Read-Host "Enter 'Yes' to remove these drivers, anything else to continue").tolower().StartsWith('yes')) {
+		foreach ( $LargeDriver in $LargeDrivers )
 		{ Remove-Item -LiteralPath $LargeDriver.FullName -Force -Recurse }
 	}
 }
