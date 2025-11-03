@@ -1,5 +1,5 @@
 ##******************************************************************
-## Revision date: 2025.10.24
+## Revision date: 2025.11.03
 ##
 ##		2022.07.08: Proof of concept / Initial release
 ##		2023.07.04: Closure of Microsoft 2304230060000186: workaround MSiSCSI bug
@@ -9,6 +9,7 @@
 ##					allow formating FAT32 partitions on larger disks (up to 2TB)
 ##		2025.10.26:	Actually, allow RecoveryDrive to run during drive scan.
 ##		2025.10.27:	Provide debugging information if RecoveryDrive hangs
+##		2025.11.03:	Warn user if BitLocker is enabled on the system drive
 ##
 
 ## Copyright (c) 2022-2025 PC-Évolution enr.
@@ -100,6 +101,27 @@ if ($ShowInfo) {
 	Write-Host
 
 }
+
+<#
+
+	Avoid BitLocker encrypted disk objects.
+
+	The « Root\cimv2\Security\MicrosoftVolumeEncryption » Namespace may not exist.
+#>
+
+$SystemDrive = (Get-WmiObject Win32_OperatingSystem).SystemDrive
+$BitLocker = Get-WmiObject -Namespace "Root\cimv2\Security\MicrosoftVolumeEncryption" -Class "Win32_EncryptableVolume" `
+	-Filter "DriveLetter = '$SystemDrive'" -ErrorAction SilentlyContinue
+If (-not $BitLocker) {
+	Write-Host "No BitLocker protection found for drive $SystemDrive."
+}
+elseif ( $BitLocker.GetProtectionStatus().protectionStatus -ne "0" ) {
+	Write-Warning "BitLocker is enabled on this system disk [$SystemDrive]..."
+	Write-Warning "Make sure the BitLocker Recovery Key is available to WinRE before you can access this disk."
+	Write-Warning "You can export the BitLocker Recovery Key AFTER the Recovery Drive is created."
+}
+else { Write-Host "BitLocker is off on this system." } 
+Write-Host ""
 
 do {
 	do {
